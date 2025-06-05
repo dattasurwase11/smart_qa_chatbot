@@ -1,0 +1,11 @@
+# .huggingface.yaml
+
+title: Smart PDF QA Chatbot
+emoji: 📄🤖
+colorFrom: green
+colorTo: indigo
+sdk: streamlit
+app_file: app.py
+
+# 🔗 This links your GitHub repo
+repo: https://github.com/dattasurwase11/smart_qa_chatbot.git
