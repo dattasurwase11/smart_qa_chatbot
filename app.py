@@ -139,15 +139,25 @@ if pdf_file is not None:
                 st.warning("No relevant information found in the document.")
             else:
                 prompt = (
+                    "Answer the question ONLY using the context below. "
+                    "If the answer is not in the context, say 'I don't know.'\n\n"
                     f"Answer the question based only on the context below.\n\n"
                     f"Context: {context}\n\n"
                     f"Question: {user_question}\nAnswer:"
                 )
                 answer = llm.invoke(prompt)
-                st.markdown(
-                    f'<div class="answer-box"><strong>📘 Answer:</strong><br>{answer}</div>',
-                    unsafe_allow_html=True
-                )
+
+                if (
+                    "i don't know" in answer.lower()
+                    or answer.strip() == ""
+                    or answer.strip().lower().startswith("powered by")
+                ):
+                    st.warning("Sorry, the answer is not found in your PDF.")
+                else:
+                    st.markdown(
+                        f'<div class="answer-box"><strong>📘 Answer:</strong><br>{answer}</div>',
+                        unsafe_allow_html=True
+                    )
 
     # Clean up
     if os.path.exists("temp.pdf"):

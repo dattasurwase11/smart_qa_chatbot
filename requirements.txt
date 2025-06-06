@@ -5,3 +5,4 @@ transformers
 torch
 faiss-cpu
 pypdf
+sentence-transformers
