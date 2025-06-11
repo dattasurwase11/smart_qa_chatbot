@@ -7,6 +7,7 @@ from transformers import pipeline
 import streamlit as st
 import torch
 import os
+from fpdf import FPDF  # <-- Added import
 
 # --- Streamlit Config ---
 st.set_page_config(page_title="AI PDF Chatbot", layout="centered")
@@ -63,6 +64,18 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+# --- Function to Save Chunks to PDF ---
+def save_chunks_to_pdf(chunks, filename="pdf_chunks_output.pdf"):
+    pdf = FPDF()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+    for i, doc in enumerate(chunks):
+        text = f"Chunk {i+1}:\n{doc.page_content}\n\n"
+        pdf.multi_cell(0, 10, text)
+    pdf.output(filename)
+    return filename
+
 # --- Cached Model Loader ---
 @st.cache_resource
 def load_model():
@@ -88,7 +101,8 @@ def embed_pdf(pdf_bytes):
         model_name="BAAI/bge-base-en-v1.5",
         model_kwargs={"device": "cpu"}
     )
-    return FAISS.from_documents(splits, embeddings)
+    vectorstore = FAISS.from_documents(splits, embeddings)
+    return vectorstore, splits
 
 # --- UI Header ---
 st.markdown('<div class="intro-text">👋 Hello! How can I help you today?</div>', unsafe_allow_html=True)
@@ -123,8 +137,23 @@ if about:
 # --- Main Logic ---
 if pdf_file is not None:
     with st.spinner("📚 Processing your PDF..."):
-        vectorstore = embed_pdf(pdf_file.read())
+        vectorstore, splits = embed_pdf(pdf_file.read())
         llm = HuggingFacePipeline(pipeline=load_model())
+
+    # --- Show and Download Chunks ---
+    with st.expander("Show embedded chunks"):
+        for i, doc in enumerate(splits):
+            st.write(f"**Chunk {i+1}:** {doc.page_content[:300]}{'...' if len(doc.page_content) > 300 else ''}")
+
+    if st.button("📥 Download Chunks as PDF"):
+        output_pdf = save_chunks_to_pdf(splits)
+        with open(output_pdf, "rb") as f:
+            st.download_button(
+                label="Download Chunks PDF",
+                data=f,
+                file_name="pdf_chunks_output.pdf",
+                mime="application/pdf"
+            )
 
     user_question = st.text_input("**❓ Ask something about your PDF:**")
 
